@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<arquillian xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns="http://jboss.org/schema/arquillian"
+            xsi:schemaLocation="
+              http://jboss.org/schema/arquillian
+              http://jboss.org/schema/arquillian/arquillian_1_0.xsd">
+  <extension qualifier="asciidoctor-test">
+    <property name="sourceDirectory">target/adoc</property>
+    <property name="outputDirectory">target/adoc-rendered</property>
+    <property name="backend">html</property>
+  </extension>
+  <extension qualifier="asciidoctor-test">
+    <property name="sourceDirectory">target/adoc</property>
+    <property name="outputDirectory">target/adoc-rendered</property>
+    <property name="backend">pdf</property>
+    <property name="headerFooter">true</property>
+    <property name="attribute.icons">font</property>
+    <property name="attribute.pagenums" />
+    <property name="attribute.toc" />
+  </extension>
+  <container qualifier="tomee-remote" default="true">
+    <configuration>
+      <property name="httpPort">-1</property>
+      <property name="ajpPort">-1</property>
+      <property name="stopPort">-1</property>
+      <property name="dir">target/tomee</property>
+      <property name="appWorkingDir">target/arquillian</property>
+      <property name="cleanOnStartUp">true</property>
+      <property name="simpleLog">true</property>
+    </configuration>
+  </container>
+</arquillian>

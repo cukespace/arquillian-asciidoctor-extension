@@ -1,0 +1,80 @@
+= Arquillian Asciidoctor Extension
+
+An extension porting asciidoctor maven plugin to arquillian world. Benefit are:
+
+- it runs after arquillian execution (when Manager stops)
+- it runs only if tests are executed without any hack
+- when used with CukeSpace all the test reporting is localized in arquillian and indenpendent of the build system
+
+== Configuration
+
+
+.Configuration
+|===
+|Name | Description
+|skipSystemProperty | name of a system property or arquillian.asciidoctor. You can set it to true to skip the rendering
+|sourceDirectory | folder containing adoc files
+|sourceDocumentName | adoc file to render
+|outputDirectory | where to do the rendering
+|preserveDirectories | -
+|relativeBaseDir | -
+|attributes | rendering attributes, syntax is `attribute.<attribute name>`
+|requires | comma separated list of required libraries
+|sourceDocumentExtensions | extensions of file to render when scanning sourceDirectory (when sourceDocumentName is not set)
+|baseDir | force a rendering basedir
+|gemPath | where gem are if used
+|backend | the backend to use (default to docbook)
+|doctype | -
+|eruby | should the rendering use eruby
+|headerFooter | should header/footer be rendered, default to false
+|embedAssets | should assets be embedded
+|templateDir | template directory
+|templateEngine | template engine
+|imagesDir | image directory, default to "images"
+|sourceHighlighter | the source highlighter to use
+|attributeMissing | default to skip
+|attributeUndefined | default to drop-line
+|extensions | allows to define custom extensions, syntax is to define `extension.<name>.class` for the qualified name and `extension.<name>.block` for the block name if needed
+|resources | allows to define some resource synchronization, syntax is to define `resource.<name>` and set the value to a file or folder to synchronize
+|===
+
+The extension configuration should be in a `asciidoctor*` extension block in arquillian.xml.
+
+== Example
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8" ?>
+<arquillian xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns="http://jboss.org/schema/arquillian"
+            xsi:schemaLocation="
+              http://jboss.org/schema/arquillian
+              http://jboss.org/schema/arquillian/arquillian_1_0.xsd">
+  <extension qualifier="asciidoctor-test">
+    <property name="sourceDirectory">target/adoc</property>
+    <property name="outputDirectory">target/adoc-rendered</property>
+    <property name="backend">html</property>
+  </extension>
+  <extension qualifier="asciidoctor-test">
+    <property name="sourceDirectory">target/adoc</property>
+    <property name="outputDirectory">target/adoc-rendered</property>
+    <property name="backend">pdf</property>
+    <property name="headerFooter">true</property>
+    <property name="attribute.icons">font</property>
+    <property name="attribute.pagenums" />
+    <property name="attribute.toc" />
+  </extension>
+
+  <container qualifier="tomee-remote" default="true">
+    <configuration>
+      <property name="httpPort">-1</property>
+      <property name="ajpPort">-1</property>
+      <property name="stopPort">-1</property>
+      <property name="dir">target/tomee</property>
+      <property name="appWorkingDir">target/arquillian</property>
+      <property name="cleanOnStartUp">true</property>
+      <property name="simpleLog">true</property>
+    </configuration>
+  </container>
+</arquillian>
+----
