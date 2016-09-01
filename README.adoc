@@ -55,7 +55,7 @@ The extension configuration should be in a `asciidoctor*` extension block in arq
     <property name="outputDirectory">target/adoc-rendered</property>
     <property name="backend">html</property>
   </extension>
-  <extension qualifier="asciidoctor-test">
+  <extension qualifier="asciidoctor-pdf">
     <property name="sourceDirectory">target/adoc</property>
     <property name="outputDirectory">target/adoc-rendered</property>
     <property name="backend">pdf</property>

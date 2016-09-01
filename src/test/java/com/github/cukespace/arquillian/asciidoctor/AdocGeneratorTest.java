@@ -30,4 +30,33 @@ public class AdocGeneratorTest {
             writer.write("= test\n\nSome adoc");
         }
     }
+
+    @Test
+    public void createAdocDiagram() throws IOException {
+        final File out = new File("target/adoc-diagram-source/test.adoc");
+        out.getParentFile().mkdirs();
+        try (final Writer writer = new FileWriter(out)) {
+            writer.write(
+                    "= test\n\n" +
+                    "[ditaa]\n" +
+                    "....\n" +
+                    "                   +-------------+\n" +
+                    "                   | Asciidoctor |-------+\n" +
+                    "                   |   diagram   |       |\n" +
+                    "                   +-------------+       | PNG out\n" +
+                    "                       ^                 |\n" +
+                    "                       | ditaa in        |\n" +
+                    "                       |                 v\n" +
+                    " +--------+   +--------+----+    /---------------\\\n" +
+                    " |        | --+ Asciidoctor +--> |               |\n" +
+                    " |  Text  |   +-------------+    |   Beautiful   |\n" +
+                    " |Document|   |   !magic!   |    |    Output     |\n" +
+                    " |     {d}|   |             |    |               |\n" +
+                    " +---+----+   +-------------+    \\---------------/\n" +
+                    "     :                                   ^\n" +
+                    "     |          Lots of work             |\n" +
+                    "     +-----------------------------------+\n" +
+                    "....");
+        }
+    }
 }

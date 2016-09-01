@@ -9,7 +9,7 @@
     <property name="outputDirectory">target/adoc-rendered</property>
     <property name="backend">html</property>
   </extension>
-  <extension qualifier="asciidoctor-test">
+  <extension qualifier="asciidoctor-pdf">
     <property name="sourceDirectory">target/adoc</property>
     <property name="outputDirectory">target/adoc-rendered</property>
     <property name="backend">pdf</property>
@@ -17,6 +17,12 @@
     <property name="attribute.icons">font</property>
     <property name="attribute.pagenums" />
     <property name="attribute.toc" />
+  </extension>
+  <extension qualifier="asciidoctor-diagram">
+    <property name="sourceDirectory">target/adoc-diagram-source</property>
+    <property name="outputDirectory">target/adoc-diagram-target</property>
+    <property name="backend">html</property>
+    <property name="requires">asciidoctor-diagram</property>
   </extension>
   <container qualifier="tomee-remote" default="true">
     <configuration>
