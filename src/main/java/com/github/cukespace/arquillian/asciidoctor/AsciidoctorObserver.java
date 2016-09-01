@@ -56,6 +56,7 @@ public class AsciidoctorObserver {
     private Instance<ArquillianDescriptor> descriptorInstance;
 
     public void init(@Observes final EventContext<ManagerStopping> ending) {
+        System.out.println("Calling");
         final ArquillianDescriptor descriptor = descriptorInstance.get();
         try {
             ending.proceed();
