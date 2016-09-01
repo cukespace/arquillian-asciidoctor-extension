@@ -50,6 +50,9 @@ import static java.util.Arrays.asList;
 
 // fork of asciidoctor maven plugin
 public class AsciidoctorObserver {
+    
+    ThreadLocal<Asciidoctor> asciidoctorInstance = new ThreadLocal<>();
+    
     private static final Pattern ASCIIDOC_EXTENSION_PATTERN = Pattern.compile("^[^_.].*\\.a((sc(iidoc)?)|d(oc)?)$");
 
     @Inject
@@ -150,12 +153,11 @@ public class AsciidoctorObserver {
             getLogger().severe("Can't create " + outputDirectory);
         }
 
-        final Asciidoctor asciidoctor;
-        if (gemPath == null) {
-            asciidoctor = Asciidoctor.Factory.create();
-        } else {
-            asciidoctor = Asciidoctor.Factory.create((File.separatorChar == '\\') ? gemPath.replaceAll("\\\\", "/") : gemPath);
-        }
+         Asciidoctor asciidoctor = asciidoctorInstance.get();
+         if(asciidoctor == null){
+             asciidoctor = createAsciidoctor(gemPath);
+             asciidoctorInstance.set(asciidoctor);
+         }
 
         final Ruby rubyInstance = JRubyRuntimeContext.get();
         final String gemHome = rubyInstance.evalScriptlet("ENV['GEM_HOME']").toString();
@@ -269,7 +271,7 @@ public class AsciidoctorObserver {
                         if (match) {
                             final File toFile = file.toFile();
                             setDestinationPaths(optionsBuilder, toFile, preserveDirectories, outputDir, preserveDirectories, outputDirectory, sourceDir);
-                            renderFile(name, asciidoctor, optionsBuilder.asMap(), toFile);
+                            renderFile(name, asciidoctorInstance.get(), optionsBuilder.asMap(), toFile);
                         }
                         return FileVisitResult.CONTINUE;
                     }
@@ -289,6 +291,14 @@ public class AsciidoctorObserver {
             final File sourceFile = new File(sourceDirectory, sourceDocumentName);
             setDestinationPaths(optionsBuilder, sourceFile, preserveDirectories, outputDir, relativeBaseDir, baseDir, sourceDir);
             renderFile(name, asciidoctor, optionsBuilder.asMap(), sourceFile);
+        }
+    }
+
+    private Asciidoctor createAsciidoctor(String gemPath) {
+        if (gemPath == null || "".equals(gemPath)) {
+            return Asciidoctor.Factory.create();
+        } else {
+            return Asciidoctor.Factory.create((File.separatorChar == '\\') ? gemPath.replaceAll("\\\\", "/") : gemPath);
         }
     }
 
