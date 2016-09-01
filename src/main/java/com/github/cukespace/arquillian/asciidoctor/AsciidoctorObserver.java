@@ -23,6 +23,7 @@ import org.jboss.arquillian.config.descriptor.api.ExtensionDef;
 import org.jboss.arquillian.core.api.Instance;
 import org.jboss.arquillian.core.api.annotation.Inject;
 import org.jboss.arquillian.core.api.annotation.Observes;
+import org.jboss.arquillian.core.api.event.ManagerStarted;
 import org.jboss.arquillian.core.api.event.ManagerStopping;
 import org.jboss.arquillian.core.spi.EventContext;
 import org.jruby.Ruby;
@@ -43,6 +44,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
@@ -51,15 +53,45 @@ import static java.util.Arrays.asList;
 // fork of asciidoctor maven plugin
 public class AsciidoctorObserver {
     
-    ThreadLocal<Asciidoctor> asciidoctorInstance = new ThreadLocal<>();
-    
     private static final Pattern ASCIIDOC_EXTENSION_PATTERN = Pattern.compile("^[^_.].*\\.a((sc(iidoc)?)|d(oc)?)$");
+    
+    private static Asciidoctor asciidoctor;
 
     @Inject
     private Instance<ArquillianDescriptor> descriptorInstance;
 
-    public void init(@Observes final EventContext<ManagerStopping> ending) {
-        System.out.println("Calling");
+    public void start(@Observes final EventContext<ManagerStarted> starting) {
+        starting.proceed();
+        final ArquillianDescriptor descriptor = descriptorInstance.get();
+        Executors.newSingleThreadExecutor().execute(new Runnable() {
+            
+            @Override
+            public void run() {
+                initAsciidoctor(descriptor);   
+            }
+        });
+    }
+    
+    private void initAsciidoctor(ArquillianDescriptor arquillianDescriptor) {
+
+        String gemPath = null;
+        for (final ExtensionDef extensionDef : arquillianDescriptor.getExtensions()) {
+            if (extensionDef.getExtensionName().startsWith("asciidoctor")) {
+                gemPath = get(extensionDef.getExtensionProperties(), "gemPath", "");
+                if (!gemPath.equals("")) {
+                    break;
+                }
+            }
+        }
+        if (gemPath == null || "".equals(gemPath)) {
+            asciidoctor = Asciidoctor.Factory.create();
+        } else {
+            asciidoctor = Asciidoctor.Factory.create((File.separatorChar == '\\') ? gemPath.replaceAll("\\\\", "/") : gemPath);
+        }
+
+    }
+
+    public void stop(@Observes final EventContext<ManagerStopping> ending) {
         final ArquillianDescriptor descriptor = descriptorInstance.get();
         try {
             ending.proceed();
@@ -153,10 +185,8 @@ public class AsciidoctorObserver {
             getLogger().severe("Can't create " + outputDirectory);
         }
 
-         Asciidoctor asciidoctor = asciidoctorInstance.get();
          if(asciidoctor == null){
-             asciidoctor = createAsciidoctor(gemPath);
-             asciidoctorInstance.set(asciidoctor);
+             throw new RuntimeException("Asciidoctor not initilizable properly.");
          }
 
         final Ruby rubyInstance = JRubyRuntimeContext.get();
@@ -271,7 +301,7 @@ public class AsciidoctorObserver {
                         if (match) {
                             final File toFile = file.toFile();
                             setDestinationPaths(optionsBuilder, toFile, preserveDirectories, outputDir, preserveDirectories, outputDirectory, sourceDir);
-                            renderFile(name, asciidoctorInstance.get(), optionsBuilder.asMap(), toFile);
+                            renderFile(name, asciidoctor, optionsBuilder.asMap(), toFile);
                         }
                         return FileVisitResult.CONTINUE;
                     }
@@ -294,13 +324,6 @@ public class AsciidoctorObserver {
         }
     }
 
-    private Asciidoctor createAsciidoctor(String gemPath) {
-        if (gemPath == null || "".equals(gemPath)) {
-            return Asciidoctor.Factory.create();
-        } else {
-            return Asciidoctor.Factory.create((File.separatorChar == '\\') ? gemPath.replaceAll("\\\\", "/") : gemPath);
-        }
-    }
 
     private void renderFile(final String name, final Asciidoctor asciidoctor, final Map<String, Object> options, final File f) {
         asciidoctor.renderFile(f, options);

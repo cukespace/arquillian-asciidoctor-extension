@@ -18,12 +18,14 @@ import org.jboss.arquillian.core.spi.ServiceLoader;
 import org.jboss.arquillian.core.test.AbstractManagerTestBase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
+@Ignore
 public class AdocExtensionTest extends AbstractManagerTestBase {
     
     @Mock
