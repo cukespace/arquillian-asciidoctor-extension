@@ -44,7 +44,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
@@ -63,13 +62,15 @@ public class AsciidoctorObserver {
     public void start(@Observes final EventContext<ManagerStarted> starting) {
         starting.proceed();
         final ArquillianDescriptor descriptor = descriptorInstance.get();
-        Executors.newSingleThreadExecutor().execute(new Runnable() {
-            
+        Thread adocThread = new Thread(new Runnable() {
+
             @Override
             public void run() {
-                initAsciidoctor(descriptor);   
+                initAsciidoctor(descriptor);
             }
-        });
+        }, "asciidoctor-thread");
+        adocThread.setDaemon(true);
+        adocThread.start();
     }
     
     private void initAsciidoctor(ArquillianDescriptor arquillianDescriptor) {
