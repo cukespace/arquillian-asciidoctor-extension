@@ -27,6 +27,25 @@
     <property name="requires">asciidoctor-diagram</property>
   </extension>
 
+  <extension qualifier="asciidoctor-article">
+    <property name="sourceDirectory">target/adoc-article</property>
+    <property name="outputDirectory">target/adoc-rendered</property>
+    <property name="attribute.doctype">article</property>
+    <property name="attribute.toc">right</property>
+    <property name="headerFooter">true</property>
+    <property name="backend">html</property>
+  </extension>
+
+  <extension qualifier="asciidoctor-article-highlights">
+    <property name="sourceDirectory">target/adoc-article</property>
+    <property name="outputDirectory">target/adoc-rendered-highlights</property>
+    <property name="attribute.toc">left</property>
+    <property name="attribute.source-highlighter">highlight.js</property>
+    <property name="headerFooter">true</property>
+    <property name="backend">html</property>
+  </extension>
+
+
   <container qualifier="tomee-remote" default="true">
     <configuration>
       <property name="httpPort">-1</property>

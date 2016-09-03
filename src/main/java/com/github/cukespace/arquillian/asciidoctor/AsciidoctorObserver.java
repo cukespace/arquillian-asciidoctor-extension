@@ -211,7 +211,9 @@ public class AsciidoctorObserver {
             LOGGER.warning("Using inherited external environment to resolve gems (" + gemHome + "), i.e. build is platform dependent!");
         }
 
-        asciidoctor.requireLibraries(requires);
+        if(!requires.isEmpty()) {
+            asciidoctor.requireLibraries(requires);
+        }
 
         final OptionsBuilder optionsBuilder = OptionsBuilder.options()
                 .backend(backend)

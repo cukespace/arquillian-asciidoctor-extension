@@ -1,43 +1,45 @@
 package com.github.cukespace.arquillian.asciidoctor;
 
-import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.InputStream;
 
-import static java.lang.System.lineSeparator;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.contentOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class AssertsTest {
+
+
     @Test
-    public void run() throws IOException {
+    public void shouldRenderTestAdoc() throws IOException {
         final File out = new File("target/adoc/test.adoc");
         assertTrue(out.isFile());
 
         final File rendered = new File("target/adoc-rendered");
         assertTrue(rendered.isDirectory());
 
-        // html
         final File renderedTestHtml = new File("target/adoc-rendered/test.html");
         assertTrue(renderedTestHtml.isFile());
-        try (final InputStream is = new FileInputStream(renderedTestHtml)) {
-            assertEquals(
-                    "<div class=\"paragraph\">\n" +
-                            "<p>Some adoc</p>\n" +
-                            "</div>", IOUtils.toString(is, "UTF-8").replace(lineSeparator(), "\n"));
-        }
 
-        // pdf
+        assertThat(contentOf(renderedTestHtml)).
+                isNotEmpty().
+                startsWith("<div class=\"paragraph\">").
+                hasLineCount(3);
+    }
+
+    @Test
+    public void shouldRenderPdf() {
         final File renderedTestPdf = new File("target/adoc-rendered/test.pdf");
         assertTrue(renderedTestPdf.isFile());
         assertTrue(renderedTestPdf.length() > 10 * 1024 /*we have some content */);
+    }
 
-        // diagram
+    @Test
+    public void shouldRenderDiagram(){
         final File renderedDiagram = new File("target/adoc-diagram-target/test.html");
         assertTrue(renderedDiagram.isFile());
         assertEquals(1, new File(renderedDiagram.getParentFile(), "images").listFiles(new FilenameFilter() {
@@ -46,8 +48,34 @@ public class AssertsTest {
                 return name.startsWith("diag-") && name.endsWith(".png");
             }
         }).length);
-        try (final InputStream is = new FileInputStream(renderedDiagram)) {
-            assertTrue(IOUtils.toString(is, "UTF-8").contains("<img src=\"images/diag-"));
-        }
+        assertThat(contentOf(renderedDiagram)).contains("<img src=\"images/diag-");
+    }
+
+    @Test
+    public void shouldRenderArticle(){
+        final File renderedArticle = new File("target/adoc-rendered/article.html");
+        assertThat(renderedArticle).exists();
+        assertThat(contentOf(renderedArticle)).
+        //toc right
+        contains("<body class=\"article toc2 toc-right\">\n" +
+                "<div id=\"header\">\n" +
+                "<h1>Document Title</h1>").
+        contains("<div id=\"toc\" class=\"toc2\">").
+        //section
+        contains("<a href=\"#_section_a\">Section A</a>").
+        //subsection
+        contains("<a href=\"#_section_a_subsection\">Section A Subsection</a>");
+    }
+
+
+    @Test
+    public void shouldRenderArticleWithHighlights(){
+        final File renderedArticle = new File("target/adoc-rendered-highlights/article.html");
+        assertThat(renderedArticle).exists();
+        assertThat(contentOf(renderedArticle)).
+         //toc right
+         contains("<body class=\"article toc2 toc-left\">").
+         //source-highlighter
+         contains("<pre class=\"highlightjs highlight\"><code class=\"language-java\" data-lang=\"java\">");
     }
 }
