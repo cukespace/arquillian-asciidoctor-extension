@@ -7,6 +7,7 @@
   <extension qualifier="asciidoctor-test">
     <property name="sourceDirectory">target/adoc</property>
     <property name="outputDirectory">target/adoc-rendered</property>
+    <property name="headerFooter">false</property>
     <property name="backend">html</property>
   </extension>
 
@@ -14,7 +15,6 @@
     <property name="sourceDirectory">target/adoc</property>
     <property name="outputDirectory">target/adoc-rendered</property>
     <property name="backend">pdf</property>
-    <property name="headerFooter">true</property>
     <property name="attribute.icons">font</property>
     <property name="attribute.pagenums" />
     <property name="attribute.toc" />
@@ -32,7 +32,6 @@
     <property name="outputDirectory">target/adoc-rendered</property>
     <property name="attribute.doctype">article</property>
     <property name="attribute.toc">right</property>
-    <property name="headerFooter">true</property>
     <property name="backend">html</property>
   </extension>
 
@@ -41,7 +40,6 @@
     <property name="outputDirectory">target/adoc-rendered-highlights</property>
     <property name="attribute.toc">left</property>
     <property name="attribute.source-highlighter">highlight.js</property>
-    <property name="headerFooter">true</property>
     <property name="backend">html</property>
   </extension>
 

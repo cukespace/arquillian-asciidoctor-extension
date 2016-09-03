@@ -162,7 +162,7 @@ public class AsciidoctorObserver {
         final String backend = get(extensionDef, "backend", "docbook");
         final String doctype = extensionDef.get("doctype");
         final String eruby = get(extensionDef, "eruby", "");
-        final boolean headerFooter = Boolean.parseBoolean(extensionDef.get("headerFooter"));
+        final boolean headerFooter = Boolean.parseBoolean(get(extensionDef, "headerFooter","true"));
         final boolean embedAssets = Boolean.parseBoolean(extensionDef.get("embedAssets"));
         final String templateDir = extensionDef.get("templateDir");
         final String templateEngine = extensionDef.get("templateEngine");

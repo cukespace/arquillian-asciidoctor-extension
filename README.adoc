@@ -26,7 +26,7 @@ An extension porting asciidoctor maven plugin to arquillian world. Benefit are:
 |backend | the backend to use (default to docbook)
 |doctype | -
 |eruby | should the rendering use eruby
-|headerFooter | should header/footer be rendered, default to false
+|headerFooter | should header/footer be rendered, default to true
 |embedAssets | should assets be embedded
 |templateDir | template directory
 |templateEngine | template engine
@@ -54,13 +54,13 @@ The extension configuration should be in a `asciidoctor*` extension block in arq
     <property name="sourceDirectory">target/adoc</property>
     <property name="outputDirectory">target/adoc-rendered</property>
     <property name="backend">html</property>
+    <property name="headerFooter">false</property>
   </extension>
 
   <extension qualifier="asciidoctor-pdf">
     <property name="sourceDirectory">target/adoc</property>
     <property name="outputDirectory">target/adoc-rendered</property>
     <property name="backend">pdf</property>
-    <property name="headerFooter">true</property>
     <property name="attribute.icons">font</property>
     <property name="attribute.pagenums" />
     <property name="attribute.toc" />
@@ -69,7 +69,6 @@ The extension configuration should be in a `asciidoctor*` extension block in arq
    <extension qualifier="asciidoctor-article">
       <property name="sourceDirectory">target/adoc-article</property>
       <property name="outputDirectory">target/adoc-rendered</property>
-      <property name="headerFooter">true</property>
       <property name="backend">html</property>
       <property name="attribute.doctype">article</property>
       <property name="attribute.toc">right</property>
