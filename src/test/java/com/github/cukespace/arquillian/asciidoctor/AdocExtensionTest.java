@@ -4,7 +4,6 @@ package com.github.cukespace.arquillian.asciidoctor;
  * Created by pestano on 03/09/16.
  */
 
-import org.apache.commons.io.IOUtils;
 import org.jboss.arquillian.config.descriptor.api.ArquillianDescriptor;
 import org.jboss.arquillian.config.descriptor.api.ContainerDef;
 import org.jboss.arquillian.config.descriptor.impl.ArquillianDescriptorImpl;
@@ -21,11 +20,14 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
 import java.util.List;
 
-import static java.lang.System.lineSeparator;
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.contentOf;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
@@ -110,16 +112,13 @@ public class AdocExtensionTest extends AbstractManagerTestBase {
 
         final File renderedTestHtml = new File("target/adoc-rendered/test.html");
         assertTrue(renderedTestHtml.isFile());
-        try (final InputStream is = new FileInputStream(renderedTestHtml)) {
-            assertEquals(
-                    "<div class=\"paragraph\">\n" +
-                            "<p>Some adoc</p>\n" +
-                            "</div>", IOUtils.toString(is, "UTF-8").replace(lineSeparator(), "\n"));
-        }
+        assertThat(contentOf(renderedTestHtml)).
+                isNotEmpty().
+                isEqualTo("<div class=\"paragraph\">\n" +
+                        "<p>Some adoc</p>\n" +
+                        "</div>").
+                hasLineCount(3);
 
-        final File renderedTestPdf = new File("target/adoc-rendered/test.pdf");
-        assertTrue(renderedTestPdf.isFile());
-        assertTrue(renderedTestPdf.length() > 10 * 1024 /*we have some content */);
     }
 
 
