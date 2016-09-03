@@ -64,7 +64,7 @@ public class AsciidoctorObserver {
 
     public void start(@Observes final EventContext<ManagerStarted> starting) {
         starting.proceed();
-        final ArquillianDescriptor descriptor = descriptorInstance.get();
+        final ArquillianDescriptor descriptor = getDescriptorInstance();
         Thread adocThread = new Thread(new Runnable() {
 
             @Override
@@ -102,7 +102,7 @@ public class AsciidoctorObserver {
     }
 
     public void stop(@Observes final EventContext<ManagerStopping> ending) {
-        final ArquillianDescriptor descriptor = descriptorInstance.get();
+        final ArquillianDescriptor descriptor = getDescriptorInstance();
         try {
             ending.proceed();
         } finally {
@@ -377,7 +377,12 @@ public class AsciidoctorObserver {
         return s == null ? val : s;
     }
 
-   
+    /**
+     * mainly for testing purposes
+     */
+    public ArquillianDescriptor getDescriptorInstance() {
+        return descriptorInstance.get();
+    }
 
     private static final class AsciidoctorJExtensionRegistry implements ExtensionRegistry {
         private final Collection<String> extensionNames;

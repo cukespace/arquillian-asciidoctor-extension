@@ -55,6 +55,7 @@ The extension configuration should be in a `asciidoctor*` extension block in arq
     <property name="outputDirectory">target/adoc-rendered</property>
     <property name="backend">html</property>
   </extension>
+
   <extension qualifier="asciidoctor-pdf">
     <property name="sourceDirectory">target/adoc</property>
     <property name="outputDirectory">target/adoc-rendered</property>
@@ -64,6 +65,16 @@ The extension configuration should be in a `asciidoctor*` extension block in arq
     <property name="attribute.pagenums" />
     <property name="attribute.toc" />
   </extension>
+
+   <extension qualifier="asciidoctor-article">
+      <property name="sourceDirectory">target/adoc-article</property>
+      <property name="outputDirectory">target/adoc-rendered</property>
+      <property name="headerFooter">true</property>
+      <property name="backend">html</property>
+      <property name="attribute.doctype">article</property>
+      <property name="attribute.toc">right</property>
+      <property name="attribute.source-highlighter">highlight.js</property>
+    </extension>
 
   <container qualifier="tomee-remote" default="true">
     <configuration>

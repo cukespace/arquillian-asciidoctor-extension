@@ -17,10 +17,8 @@ public class AdocGeneratorTest {
 
     @Deployment(testable = false)
     public static Archive<?> app() {
-        WebArchive war = ShrinkWrap.create(WebArchive.class, "app.war")
+        return ShrinkWrap.create(WebArchive.class, "app.war")
                 .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml");
-        System.out.println(war.toString(true));
-        return war;
     }
 
     @Test
