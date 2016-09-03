@@ -53,11 +53,11 @@ import static java.util.Arrays.asList;
 // fork of asciidoctor maven plugin
 public class AsciidoctorObserver {
     
-    private static final Logger LOGGER = Logger.getLogger(AsciidoctorObserver.class.getName());
+    private static Logger LOGGER;
     
     private static final Pattern ASCIIDOC_EXTENSION_PATTERN = Pattern.compile("^[^_.].*\\.a((sc(iidoc)?)|d(oc)?)$");
     
-    private static Asciidoctor asciidoctor;
+    private static Map<String,Asciidoctor> asciidoctorMap = new HashMap<>();
 
     @Inject
     private Instance<ArquillianDescriptor> descriptorInstance;
@@ -72,9 +72,9 @@ public class AsciidoctorObserver {
                 try {
                     long initialTime = System.currentTimeMillis();
                     initAsciidoctor(descriptor);
-                    LOGGER.info(String.format("Asciidoctor successfully initialized in %s milliseconds",System.currentTimeMillis() - initialTime));
+                    getLogger().info(String.format("Asciidoctor successfully initialized in %s milliseconds", System.currentTimeMillis() - initialTime));
                 }catch (Exception e){
-                    LOGGER.log(Level.SEVERE,"Could not initilize Asciidoctor instance", e);
+                    getLogger().log(Level.SEVERE, "Could not initilize Asciidoctor instance", e);
                 }
             }
         }, "arquillian-asciidoctor-thread");
@@ -84,21 +84,16 @@ public class AsciidoctorObserver {
     
     private void initAsciidoctor(ArquillianDescriptor arquillianDescriptor) {
 
-        String gemPath = null;
         for (final ExtensionDef extensionDef : arquillianDescriptor.getExtensions()) {
             if (extensionDef.getExtensionName().startsWith("asciidoctor")) {
-                gemPath = get(extensionDef.getExtensionProperties(), "gemPath", "");
-                if (!gemPath.equals("")) {
-                    break;
-                }
+               String gemPath = get(extensionDef.getExtensionProperties(), "gemPath", "");
+               Asciidoctor asciidoctor = asciidoctorMap.get(gemPath);
+               if(asciidoctor == null){
+                   asciidoctor = Asciidoctor.Factory.create((File.separatorChar == '\\') ? gemPath.replaceAll("\\\\", "/") : gemPath);
+                   asciidoctorMap.put(gemPath,asciidoctor);
+               }
             }
         }
-        if (gemPath == null || "".equals(gemPath)) {
-            asciidoctor = Asciidoctor.Factory.create();
-        } else {
-            asciidoctor = Asciidoctor.Factory.create((File.separatorChar == '\\') ? gemPath.replaceAll("\\\\", "/") : gemPath);
-        }
-
     }
 
     public void stop(@Observes final EventContext<ManagerStopping> ending) {
@@ -117,7 +112,7 @@ public class AsciidoctorObserver {
                 try {
                     render(extensionDef.getExtensionName(), extensionDef.getExtensionProperties());
                 }finally {
-                    LOGGER.info(String.format("Execution time for extension %s: %d milliseconds",extensionDef.getExtensionName(),System.currentTimeMillis() - initialTime));
+                    getLogger().info(String.format("Execution time for extension %s: %d milliseconds", extensionDef.getExtensionName(), System.currentTimeMillis() - initialTime));
                 }
             }
         }
@@ -191,24 +186,25 @@ public class AsciidoctorObserver {
         // now start the rendering
         final File sourceDir = new File(sourceDirectory);
         if (!sourceDir.exists()) {
-            LOGGER.warning("No adoc to render, skipping");
+            getLogger().warning("No adoc to render, skipping");
             return;
         }
 
         final File outputDir = new File(outputDirectory);
         if (!outputDir.exists() && !outputDir.mkdirs()) {
-            LOGGER.severe("Can't create " + outputDirectory);
+            getLogger().severe("Can't create " + outputDirectory);
         }
 
-         if(asciidoctor == null){
+        final Asciidoctor asciidoctor = asciidoctorMap.get(gemPath);
+        if(asciidoctor == null){
              throw new RuntimeException("Asciidoctor not initilizable properly.");
-         }
+        }
 
         final Ruby rubyInstance = JRubyRuntimeContext.get();
         final String gemHome = rubyInstance.evalScriptlet("ENV['GEM_HOME']").toString();
         final String gemHomeExpected = (gemPath == null || "".equals(gemPath)) ? "" : gemPath.split(java.io.File.pathSeparator)[0];
         if (!"".equals(gemHome) && !gemHomeExpected.equals(gemHome)) {
-            LOGGER.warning("Using inherited external environment to resolve gems (" + gemHome + "), i.e. build is platform dependent!");
+            getLogger().warning("Using inherited external environment to resolve gems (" + gemHome + "), i.e. build is platform dependent!");
         }
 
         if(!requires.isEmpty()) {
@@ -274,7 +270,7 @@ public class AsciidoctorObserver {
         for (final String resource : resources) {
             final File from = new File(resource);
             if (!from.exists()) {
-                LOGGER.warning(from + " doesn't exist");
+                getLogger().warning(from + " doesn't exist");
                 continue;
             }
 
@@ -344,7 +340,7 @@ public class AsciidoctorObserver {
 
     private void renderFile(final String name, final Asciidoctor asciidoctor, final Map<String, Object> options, final File f) {
         asciidoctor.renderFile(f, options);
-        LOGGER.info("Rendered " + f + " @ " + name);
+        getLogger().info("Rendered " + f + " @ " + name);
     }
 
     private void setDestinationPaths(final OptionsBuilder optionsBuilder, final File sourceFile,
@@ -376,6 +372,14 @@ public class AsciidoctorObserver {
         final String s = extensionDef.get(key);
         return s == null ? val : s;
     }
+
+    private Logger getLogger() {
+        if(LOGGER == null){
+            LOGGER = Logger.getLogger(AsciidoctorObserver.class.getName());
+        }
+        return LOGGER;
+    }
+
 
     /**
      * mainly for testing purposes
