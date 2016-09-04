@@ -1,5 +1,6 @@
 package com.github.cukespace.arquillian.asciidoctor;
 
+import org.apache.commons.io.IOUtils;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.shrinkwrap.api.Archive;
@@ -9,13 +10,11 @@ import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
+import java.io.*;
 
 @RunWith(Arquillian.class)
 public class AdocGeneratorTest {
+
     @Deployment(testable = false)
     public static Archive<?> app() {
         return ShrinkWrap.create(WebArchive.class, "app.war")
@@ -23,7 +22,7 @@ public class AdocGeneratorTest {
     }
 
     @Test
-    public void createAdoc() throws IOException {
+    public void createSimpleAdoc() throws IOException {
         final File out = new File("target/adoc/test.adoc");
         out.getParentFile().mkdirs();
         try (final Writer writer = new FileWriter(out)) {
@@ -58,5 +57,13 @@ public class AdocGeneratorTest {
                     "     +-----------------------------------+\n" +
                     "....");
         }
+    }
+
+    @Test
+    public void createArticle() throws IOException {
+        File out = new File("target/adoc-article/article.adoc");
+        out.getParentFile().mkdirs();
+        IOUtils.copy(getClass().getResourceAsStream("/samples/article.adoc"),
+                new FileOutputStream(out));
     }
 }

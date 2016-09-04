@@ -23,6 +23,7 @@ import org.jboss.arquillian.config.descriptor.api.ExtensionDef;
 import org.jboss.arquillian.core.api.Instance;
 import org.jboss.arquillian.core.api.annotation.Inject;
 import org.jboss.arquillian.core.api.annotation.Observes;
+import org.jboss.arquillian.core.api.event.ManagerStarted;
 import org.jboss.arquillian.core.api.event.ManagerStopping;
 import org.jboss.arquillian.core.spi.EventContext;
 import org.jruby.Ruby;
@@ -43,6 +44,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
@@ -50,13 +52,52 @@ import static java.util.Arrays.asList;
 
 // fork of asciidoctor maven plugin
 public class AsciidoctorObserver {
+    
+    private static Logger LOGGER;
+    
     private static final Pattern ASCIIDOC_EXTENSION_PATTERN = Pattern.compile("^[^_.].*\\.a((sc(iidoc)?)|d(oc)?)$");
+    
+    private static Map<String,Asciidoctor> asciidoctorMap = new HashMap<>();
 
     @Inject
     private Instance<ArquillianDescriptor> descriptorInstance;
 
-    public void init(@Observes final EventContext<ManagerStopping> ending) {
-        final ArquillianDescriptor descriptor = descriptorInstance.get();
+    public void start(@Observes final EventContext<ManagerStarted> starting) {
+        starting.proceed();
+        final ArquillianDescriptor descriptor = getDescriptorInstance();
+        Thread adocThread = new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                try {
+                    long initialTime = System.currentTimeMillis();
+                    initAsciidoctor(descriptor);
+                    getLogger().info(String.format("Asciidoctor successfully initialized in %s milliseconds", System.currentTimeMillis() - initialTime));
+                }catch (Exception e){
+                    getLogger().log(Level.SEVERE, "Could not initilize Asciidoctor instance", e);
+                }
+            }
+        }, "arquillian-asciidoctor-thread");
+        adocThread.setDaemon(true);
+        adocThread.start();
+    }
+    
+    private void initAsciidoctor(ArquillianDescriptor arquillianDescriptor) {
+
+        for (final ExtensionDef extensionDef : arquillianDescriptor.getExtensions()) {
+            if (extensionDef.getExtensionName().startsWith("asciidoctor")) {
+               String gemPath = get(extensionDef.getExtensionProperties(), "gemPath", "");
+               Asciidoctor asciidoctor = asciidoctorMap.get(gemPath);
+               if(asciidoctor == null){
+                   asciidoctor = Asciidoctor.Factory.create((File.separatorChar == '\\') ? gemPath.replaceAll("\\\\", "/") : gemPath);
+                   asciidoctorMap.put(gemPath,asciidoctor);
+               }
+            }
+        }
+    }
+
+    public void stop(@Observes final EventContext<ManagerStopping> ending) {
+        final ArquillianDescriptor descriptor = getDescriptorInstance();
         try {
             ending.proceed();
         } finally {
@@ -67,7 +108,12 @@ public class AsciidoctorObserver {
     private void renderAll(final ArquillianDescriptor descriptor) {
         for (final ExtensionDef extensionDef : descriptor.getExtensions()) {
             if (extensionDef.getExtensionName().startsWith("asciidoctor")) {
-                render(extensionDef.getExtensionName(), extensionDef.getExtensionProperties());
+                long initialTime = System.currentTimeMillis();
+                try {
+                    render(extensionDef.getExtensionName(), extensionDef.getExtensionProperties());
+                }finally {
+                    getLogger().info(String.format("Execution time for extension %s: %d milliseconds", extensionDef.getExtensionName(), System.currentTimeMillis() - initialTime));
+                }
             }
         }
     }
@@ -111,7 +157,7 @@ public class AsciidoctorObserver {
         final String backend = get(extensionDef, "backend", "docbook");
         final String doctype = extensionDef.get("doctype");
         final String eruby = get(extensionDef, "eruby", "");
-        final boolean headerFooter = Boolean.parseBoolean(extensionDef.get("headerFooter"));
+        final boolean headerFooter = Boolean.parseBoolean(get(extensionDef, "headerFooter","true"));
         final boolean embedAssets = Boolean.parseBoolean(extensionDef.get("embedAssets"));
         final String templateDir = extensionDef.get("templateDir");
         final String templateEngine = extensionDef.get("templateEngine");
@@ -149,11 +195,9 @@ public class AsciidoctorObserver {
             getLogger().severe("Can't create " + outputDirectory);
         }
 
-        final Asciidoctor asciidoctor;
-        if (gemPath == null) {
-            asciidoctor = Asciidoctor.Factory.create();
-        } else {
-            asciidoctor = Asciidoctor.Factory.create((File.separatorChar == '\\') ? gemPath.replaceAll("\\\\", "/") : gemPath);
+        final Asciidoctor asciidoctor = asciidoctorMap.get(gemPath);
+        if(asciidoctor == null){
+             throw new RuntimeException("Asciidoctor not initilizable properly.");
         }
 
         final Ruby rubyInstance = JRubyRuntimeContext.get();
@@ -163,7 +207,9 @@ public class AsciidoctorObserver {
             getLogger().warning("Using inherited external environment to resolve gems (" + gemHome + "), i.e. build is platform dependent!");
         }
 
-        asciidoctor.requireLibraries(requires);
+        if(!requires.isEmpty()) {
+            asciidoctor.requireLibraries(requires);
+        }
 
         final OptionsBuilder optionsBuilder = OptionsBuilder.options()
                 .backend(backend)
@@ -291,6 +337,7 @@ public class AsciidoctorObserver {
         }
     }
 
+
     private void renderFile(final String name, final Asciidoctor asciidoctor, final Map<String, Object> options, final File f) {
         asciidoctor.renderFile(f, options);
         getLogger().info("Rendered " + f + " @ " + name);
@@ -327,7 +374,18 @@ public class AsciidoctorObserver {
     }
 
     private Logger getLogger() {
-        return Logger.getLogger(AsciidoctorObserver.class.getName());
+        if(LOGGER == null){
+            LOGGER = Logger.getLogger(AsciidoctorObserver.class.getName());
+        }
+        return LOGGER;
+    }
+
+
+    /**
+     * mainly for testing purposes
+     */
+    public ArquillianDescriptor getDescriptorInstance() {
+        return descriptorInstance.get();
     }
 
     private static final class AsciidoctorJExtensionRegistry implements ExtensionRegistry {
