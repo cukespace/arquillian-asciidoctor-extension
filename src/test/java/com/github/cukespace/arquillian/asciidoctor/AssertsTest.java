@@ -76,6 +76,6 @@ public class AssertsTest {
          //toc right
          contains("<body class=\"article toc2 toc-left\">").
          //source-highlighter
-         contains("<pre class=\"highlightjs highlight\"><code class=\"language-java\" data-lang=\"java\">");
+         contains("<pre class=\"highlightjs highlight\"><code class=\"language-java hljs\" data-lang=\"java\">");
     }
 }
