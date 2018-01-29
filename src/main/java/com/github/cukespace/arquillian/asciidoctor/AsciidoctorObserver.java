@@ -1,5 +1,6 @@
 package com.github.cukespace.arquillian.asciidoctor;
 
+import com.github.cukespace.arquillian.asciidoctor.api.event.RenderDocsEvent;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.asciidoctor.Asciidoctor;
@@ -104,6 +105,13 @@ public class AsciidoctorObserver {
             renderAll(descriptor);
         }
     }
+
+    public void render(@Observes final RenderDocsEvent renderDocsEvent) {
+        ArquillianDescriptor descriptor = renderDocsEvent.getDescriptor();
+        initAsciidoctor(descriptor);
+        renderAll(descriptor);
+    }
+
 
     private void renderAll(final ArquillianDescriptor descriptor) {
         for (final ExtensionDef extensionDef : descriptor.getExtensions()) {
