@@ -35,7 +35,7 @@ public class AssertsTest {
     public void shouldRenderPdf() {
         final File renderedTestPdf = new File("target/adoc-rendered/test.pdf");
         assertTrue(renderedTestPdf.isFile());
-        assertTrue(renderedTestPdf.length() > 10 * 1024 /*we have some content */);
+        assertTrue(renderedTestPdf.length() > 5 * 1024 /*we have some content */);
     }
 
     @Test
