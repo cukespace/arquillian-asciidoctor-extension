@@ -6,6 +6,7 @@ import org.asciidoctor.Asciidoctor;
 import org.asciidoctor.AttributesBuilder;
 import org.asciidoctor.OptionsBuilder;
 import org.asciidoctor.SafeMode;
+import org.asciidoctor.extension.ExtensionGroup;
 import org.asciidoctor.extension.BlockMacroProcessor;
 import org.asciidoctor.extension.BlockProcessor;
 import org.asciidoctor.extension.DocinfoProcessor;
@@ -52,12 +53,12 @@ import static java.util.Arrays.asList;
 
 // fork of asciidoctor maven plugin
 public class AsciidoctorObserver {
-    
+
     private static Logger LOGGER;
-    
+
     private static final Pattern ASCIIDOC_EXTENSION_PATTERN = Pattern.compile("^[^_.].*\\.a((sc(iidoc)?)|d(oc)?)$");
-    
-    private static Map<String,Asciidoctor> asciidoctorMap = new HashMap<>();
+
+    private static Map<String, Asciidoctor> asciidoctorMap = new HashMap<>();
 
     @Inject
     private Instance<ArquillianDescriptor> descriptorInstance;
@@ -73,25 +74,27 @@ public class AsciidoctorObserver {
                     long initialTime = System.currentTimeMillis();
                     initAsciidoctor(descriptor);
                     getLogger().info(String.format("Asciidoctor successfully initialized in %s milliseconds", System.currentTimeMillis() - initialTime));
-                }catch (Exception e){
-                    getLogger().log(Level.SEVERE, "Could not initilize Asciidoctor instance", e);
+                } catch (Exception e) {
+                    getLogger().log(Level.SEVERE, "Could not initialize Asciidoctor instance", e);
                 }
             }
         }, "arquillian-asciidoctor-thread");
         adocThread.setDaemon(true);
         adocThread.start();
     }
-    
+
+
+
     private void initAsciidoctor(ArquillianDescriptor arquillianDescriptor) {
 
         for (final ExtensionDef extensionDef : arquillianDescriptor.getExtensions()) {
             if (extensionDef.getExtensionName().startsWith("asciidoctor")) {
-               String gemPath = get(extensionDef.getExtensionProperties(), "gemPath", "");
-               Asciidoctor asciidoctor = asciidoctorMap.get(gemPath);
-               if(asciidoctor == null){
-                   asciidoctor = Asciidoctor.Factory.create((File.separatorChar == '\\') ? gemPath.replaceAll("\\\\", "/") : gemPath);
-                   asciidoctorMap.put(gemPath,asciidoctor);
-               }
+                String gemPath = get(extensionDef.getExtensionProperties(), "gemPath", "");
+                Asciidoctor asciidoctor = asciidoctorMap.get(gemPath);
+                if (asciidoctor == null) {
+                    asciidoctor = Asciidoctor.Factory.create((File.separatorChar == '\\') ? gemPath.replaceAll("\\\\", "/") : gemPath);
+                    asciidoctorMap.put(gemPath, asciidoctor);
+                }
             }
         }
     }
@@ -105,13 +108,14 @@ public class AsciidoctorObserver {
         }
     }
 
+
     private void renderAll(final ArquillianDescriptor descriptor) {
         for (final ExtensionDef extensionDef : descriptor.getExtensions()) {
             if (extensionDef.getExtensionName().startsWith("asciidoctor")) {
                 long initialTime = System.currentTimeMillis();
                 try {
                     render(extensionDef.getExtensionName(), extensionDef.getExtensionProperties());
-                }finally {
+                } finally {
                     getLogger().info(String.format("Execution time for extension %s: %d milliseconds", extensionDef.getExtensionName(), System.currentTimeMillis() - initialTime));
                 }
             }
@@ -157,7 +161,7 @@ public class AsciidoctorObserver {
         final String backend = get(extensionDef, "backend", "docbook");
         final String doctype = extensionDef.get("doctype");
         final String eruby = get(extensionDef, "eruby", "");
-        final boolean headerFooter = Boolean.parseBoolean(get(extensionDef, "headerFooter","true"));
+        final boolean headerFooter = Boolean.parseBoolean(get(extensionDef, "headerFooter", "true"));
         final boolean embedAssets = Boolean.parseBoolean(extensionDef.get("embedAssets"));
         final String templateDir = extensionDef.get("templateDir");
         final String templateEngine = extensionDef.get("templateEngine");
@@ -196,18 +200,18 @@ public class AsciidoctorObserver {
         }
 
         final Asciidoctor asciidoctor = asciidoctorMap.get(gemPath);
-        if(asciidoctor == null){
-             throw new RuntimeException("Asciidoctor not initilizable properly.");
+        if (asciidoctor == null) {
+            throw new RuntimeException("Asciidoctor not initilizable properly.");
         }
 
-        final Ruby rubyInstance = JRubyRuntimeContext.get();
+        final Ruby rubyInstance = JRubyRuntimeContext.get(asciidoctor);
         final String gemHome = rubyInstance.evalScriptlet("ENV['GEM_HOME']").toString();
         final String gemHomeExpected = (gemPath == null || "".equals(gemPath)) ? "" : gemPath.split(java.io.File.pathSeparator)[0];
         if (!"".equals(gemHome) && !gemHomeExpected.equals(gemHome)) {
             getLogger().warning("Using inherited external environment to resolve gems (" + gemHome + "), i.e. build is platform dependent!");
         }
 
-        if(!requires.isEmpty()) {
+        if (!requires.isEmpty()) {
             asciidoctor.requireLibraries(requires);
         }
 
@@ -264,6 +268,7 @@ public class AsciidoctorObserver {
             }
         }
         optionsBuilder.attributes(attributesBuilder);
+
 
         new AsciidoctorJExtensionRegistry(extensions, extensionDef).register(asciidoctor);
 
@@ -338,9 +343,30 @@ public class AsciidoctorObserver {
     }
 
 
-    private void renderFile(final String name, final Asciidoctor asciidoctor, final Map<String, Object> options, final File f) {
-        asciidoctor.renderFile(f, options);
-        getLogger().info("Rendered " + f + " @ " + name);
+    private void renderFile(final String name, final Asciidoctor asciidoctor, final Map<String, Object> options, File f) {
+        ExtensionGroup cukedoctorExtensionGroup = asciidoctor.createGroup("com.github.cukedoctor");
+        boolean cukedoctorExtensionRegistered = true;
+        try {
+            if (options.get("backend").toString().equalsIgnoreCase("pdf") && cukedoctorExtensionIsPresent()) {
+                cukedoctorExtensionGroup.unregister();
+                cukedoctorExtensionRegistered = false;
+            }
+            asciidoctor.renderFile(f, options);
+        } finally {
+            if (!cukedoctorExtensionRegistered) {
+                cukedoctorExtensionGroup.register();
+            }
+            getLogger().info("Rendered " + f + " @ " + name);
+        }
+    }
+
+    private boolean cukedoctorExtensionIsPresent() {
+        try {
+            Class.forName("com.github.cukedoctor.extension.CukedoctorExtensionRegistry");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
     }
 
     private void setDestinationPaths(final OptionsBuilder optionsBuilder, final File sourceFile,
@@ -374,7 +400,7 @@ public class AsciidoctorObserver {
     }
 
     private Logger getLogger() {
-        if(LOGGER == null){
+        if (LOGGER == null) {
             LOGGER = Logger.getLogger(AsciidoctorObserver.class.getName());
         }
         return LOGGER;

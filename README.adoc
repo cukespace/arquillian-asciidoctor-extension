@@ -4,7 +4,7 @@ An extension porting asciidoctor maven plugin to arquillian world. Benefit are:
 
 - it runs after arquillian execution (when Manager stops)
 - it runs only if tests are executed without any hack
-- when used with CukeSpace all the test reporting is localized in arquillian and indenpendent of the build system
+- when used with CukeSpace all the test reporting is localized in arquillian and independent of the build system
 
 == Configuration
 
@@ -38,7 +38,7 @@ An extension porting asciidoctor maven plugin to arquillian world. Benefit are:
 |resources | allows to define some resource synchronization, syntax is to define `resource.<name>` and set the value to a file or folder to synchronize
 |===
 
-The extension configuration should be in a `asciidoctor*` extension block in arquillian.xml.
+The extension configuration should be in a `asciidoctor` extension block in arquillian.xml.
 
 == Example
 
